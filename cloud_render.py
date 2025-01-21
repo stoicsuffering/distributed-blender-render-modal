@@ -1,5 +1,5 @@
 from pathlib import Path
-from dependencies import app, rendering_image, volume, VOLUME_MOUNT_PATH
+from dependencies import app, rendering_image, volume, VOLUME_MOUNT_PATH, remote_job_frames_directory_path
 
 WITH_GPU = True  # try changing this to "False" to run rendering massively in parallel on CPUs!
 
@@ -20,27 +20,13 @@ WITH_GPU = True  # try changing this to "False" to run rendering massively in pa
     volumes={VOLUME_MOUNT_PATH: volume}
 )
 def test_render_image(session_id: str, frame_number: int) -> str:
-    from pathlib import Path
-    from dependencies import blender_proj_remote_path
-    path = blender_proj_remote_path(session_id, validate=True)
-    return f"passed validation (frame {frame_number}). posix path: {path.as_posix()}"
-
-
-@app.function(
-    gpu="L40S" if WITH_GPU else None,
-    # default limits on Modal free tier
-    concurrency_limit=10 if WITH_GPU else 100,
-    image=rendering_image,
-)
-def render(blend_file: bytes, frame_number: int = 0) -> bytes:
-    """Renders the n-th frame of a Blender file as a PNG."""
     import bpy
+    from dependencies import blender_proj_remote_path, remote_job_frames_directory_path
 
-    input_path = "/tmp/input.blend"
-    output_path = f"/tmp/output-{frame_number}.png"
+    input_path = blender_proj_remote_path(session_id, validate=True)
+    output_path = remote_job_frames_directory_path(session_id)
 
-    # Blender requires input as a file.
-    Path(input_path).write_bytes(blend_file)
+    remote_job_frames_directory_path(session_id).mkdir(parents=True, exist_ok=True)
 
     bpy.ops.wm.open_mainfile(filepath=input_path)
     bpy.context.scene.frame_set(frame_number)
@@ -48,9 +34,9 @@ def render(blend_file: bytes, frame_number: int = 0) -> bytes:
     configure_rendering(bpy.context, with_gpu=WITH_GPU)
     bpy.ops.render.render(write_still=True)
 
-    # Blender renders image outputs to a file as well.
-    return Path(output_path).read_bytes()
+    volume.commit()
 
+    return f"successfully rendered {output_path.as_posix()}"
 
 # ### Rendering with acceleration
 

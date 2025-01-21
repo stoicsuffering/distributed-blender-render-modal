@@ -26,8 +26,23 @@ def validate_blender_path(path: Path):
 def blender_proj_remote_volume_upload_path(session_id: str) -> Path:
     return Path(f"{session_id}/project.blend")
 
+def remote_job_path(session_id: str) -> Path:
+    return VOLUME_MOUNT_PATH / session_id
+
+def remote_job_frames_directory_path(session_id: str) -> Path:
+    return VOLUME_MOUNT_PATH / session_id / "frames"
+
+def remote_job_frame_path(session_id: str, frame: int) -> Path:
+    return remote_job_frames_directory_path(session_id) / f"frame_{frame:05}.exr"
+
 def blender_proj_remote_path(session_id: str, validate: bool) -> Path:
-    path = VOLUME_MOUNT_PATH / session_id / "project.blend"
+    path = remote_job_path(session_id) / "project.blend"
     if validate:
         validate_blender_path(path)
     return path
+
+def volume_zip_path(session_id: str) -> Path:
+    return VOLUME_MOUNT_PATH / session_id / "frames.zip"
+
+def volume_zip_local_download_path(session_id: str) -> Path:
+    return Path("/session_id") / "frames.zip"
