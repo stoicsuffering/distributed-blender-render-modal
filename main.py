@@ -2,7 +2,7 @@ import modal
 import uuid
 from pathlib import Path
 from dependencies import app, volume, validate_blender_path, blender_proj_remote_volume_upload_path, volume_zip_local_download_path
-from cloud_render import render, test_render_image
+from cloud_render import render
 from cloud_combine import zip_frames
 
 @app.local_entrypoint()
@@ -15,11 +15,10 @@ def main(frame_count: int, blend_path: str):
         local_blend = Path(blend_path)
         validate_blender_path(local_blend)
         batch.put_file(local_blend, blender_proj_remote_volume_upload_path(session_id))
-    volume.commit()
 
     # 2. Render frames in the Volume
     args = [(session_id, frame) for frame in range(1, frame_count + 1)]
-    results = list(test_render_image.starmap(args))
+    results = list(render.starmap(args))
     for r in results:
         print(r)
     print("All frames rendered into the Volume.")
@@ -30,6 +29,6 @@ def main(frame_count: int, blend_path: str):
 
     # 4. Show how to download it locally via CLI
     print("\nTo download locally, run:\n"
-          f"  modal volume get distributed-render:{volume_zip_local_download_path(session_id)} /tmp/renders/${session_id}/local_frames.zip\n")
+          f"  modal volume get distributed-render {volume_zip_local_download_path(session_id)} /tmp/renders/{session_id}/local_frames.zip\n")
 
     print("Done!")

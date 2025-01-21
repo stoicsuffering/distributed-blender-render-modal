@@ -12,6 +12,9 @@ from dependencies import (
 @app.function(
     image=combination_image,
     volumes={VOLUME_MOUNT_PATH: volume},  # Attach the same volume
+    timeout=3600,
+    cpu=16.0,
+    memory=16384,
 )
 def zip_frames(session_id: str) -> str:
     """
@@ -25,11 +28,12 @@ def zip_frames(session_id: str) -> str:
     frames_dir = remote_job_frames_directory_path(session_id)
     out_zip = volume_zip_path(session_id)
 
-    # Shell out to create a zip at maximum compression (-9).
-    # We'll run this in job_dir so we can reference frames/ simply.
+    print(f"Creating zip file {out_zip.as_posix()} from {frames_dir.as_posix()}")
+
     subprocess.run(
         ["zip", "-9", "-r", out_zip.as_posix(), frames_dir.as_posix()],  # 'frames/'
-        check=True
+        check=True,
+        cwd=remote_job_path(session_id).as_posix()
     )
 
     # Commit the changes to ensure the new frames.zip is visible
