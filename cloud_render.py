@@ -3,6 +3,8 @@ from dependencies import app, rendering_image, volume, VOLUME_MOUNT_PATH, remote
 from modal import gpu
 WITH_GPU = True  # try changing this to "False" to run rendering massively in parallel on CPUs!
 
+USE_CAMERA = False
+
 # We decorate the function with `@app.function` to define it as a Modal function.
 # Note that in addition to defining the hardware requirements of the function,
 # we also specify the container image that the function runs in (the one we defined above).
@@ -17,6 +19,57 @@ WITH_GPU = True  # try changing this to "False" to run rendering massively in pa
 # os.system("cat /proc/cpuinfo")
 # os.system("lscpu")
 
+@app.function(
+    gpu="L40S" if WITH_GPU else None,
+    cpu=8.0,
+    memory=10240,
+    concurrency_limit=30 if WITH_GPU else 100,
+    image=rendering_image,
+    volumes={VOLUME_MOUNT_PATH: volume},
+    timeout=10800 # 3 hours. TODO clamp animation batch size to not take longer than 3h, some max like 360 frames.
+)
+def render_sequence(session_id: str, start_frame: int, end_frame: int, camera_name: str) -> str:
+    import sys
+    sys.path.append('/opt/blender')
+    import bpy
+    import os
+    from dependencies import blender_proj_remote_path, remote_job_frames_directory_path
+
+    # Define paths
+    input_path = str(blender_proj_remote_path(session_id, validate=True))
+    if USE_CAMERA:
+        base_output_dir = remote_job_frames_directory_path(session_id) / camera_name # Per-camera subdirectory
+    else:
+        base_output_dir = remote_job_frames_directory_path(session_id)
+
+    base_output_dir.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
+
+    output_path = str(base_output_dir / "frame_")  # Base file path for animation frames
+
+    # Load Blender scene
+    bpy.ops.wm.open_mainfile(filepath=input_path)
+
+    # Set the correct camera
+    if USE_CAMERA:
+        camera_obj = bpy.data.objects.get(camera_name)
+        if not camera_obj:
+          raise ValueError(f"Camera '{camera_name}' not found in Blender project.")
+
+        bpy.context.scene.camera = camera_obj  # Assign the camera
+
+    # Set frame range
+    bpy.context.scene.frame_start = start_frame
+    bpy.context.scene.frame_end = end_frame
+    bpy.context.scene.render.filepath = output_path  # Blender will auto-append frame numbers
+
+    # Configure rendering and execute animation render
+    configure_rendering(bpy.context, with_gpu=WITH_GPU)
+    bpy.ops.render.render(animation=True)  # Render the entire frame range
+
+    # Commit volume changes (if necessary)
+    volume.commit()
+
+    return f"Successfully rendered frames {start_frame}-{end_frame} for {camera_name} at {output_path}"
 
 @app.function(
     gpu="L40S" if WITH_GPU else None, # L40S
@@ -70,7 +123,7 @@ def configure_rendering(ctx, with_gpu: bool):
 
     # Use GPU acceleration if available.
     if with_gpu:
-        cycles.preferences.compute_device_type = "CUDA"
+        cycles.preferences.compute_device_type = "OPTIX"
         ctx.scene.cycles.device = "GPU"
 
         # reload the devices to update the configuration

@@ -2,7 +2,9 @@ import modal
 import uuid
 from pathlib import Path
 from dependencies import app, volume, validate_blender_path, blender_proj_remote_volume_upload_path, volume_zip_local_download_path
-from cloud_render import render
+from cloud_render import render, render_sequence
+from chunking import chunk_frame_range
+import math
 # from cloud_combine import zip_frames
 
 @app.local_entrypoint()
@@ -16,9 +18,18 @@ def main(frame_count: int, blend_path: str):
         validate_blender_path(local_blend)
         batch.put_file(local_blend, blender_proj_remote_volume_upload_path(session_id))
 
+    concurrency_limit = 30
+
+    chunk_size = max(1, math.ceil(frame_count / concurrency_limit))
+
+    chunk_size = min(100, max(3, chunk_size))
+    print(f"Splitting {frame_count} frames into chunks of {chunk_size}")
+
+    animations = chunk_frame_range(1, frame_count, chunk_size=chunk_size)
     # 2. Render frames in the Volume
-    args = [(session_id, frame) for frame in range(1, frame_count + 1)]
-    results = list(render.starmap(args))
+    args = [(session_id, anim[0], anim[1], "TODO CAMERA NAME") for anim in animations]
+    print(args)
+    results = list(render_sequence.starmap(args))
     for r in results:
         print(r)
     print("All frames rendered into the Volume.")
@@ -30,5 +41,7 @@ def main(frame_count: int, blend_path: str):
     # # 4. Show how to download it locally via CLI
     # print("\nTo download locally, run:\n"
     #       f"  modal volume get distributed-render {volume_zip_local_download_path(session_id)} /tmp/renders/{session_id}/local_frames.zip\n")
+
+    # Something like `modal volume get distributed-render /jobs/bf53d947-1f74-4460-8403-4357a6c190eb/frames` but don't forget to make a frames dir!
 
     print("Done!")
