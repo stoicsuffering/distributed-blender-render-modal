@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 from dependencies import app, volume, validate_blender_path, blender_proj_remote_volume_upload_path, volume_zip_local_download_path
 from cloud_render import render
-from cloud_combine import zip_frames
+# from cloud_combine import zip_frames
 
 @app.local_entrypoint()
 def main(frame_count: int, blend_path: str):
@@ -23,12 +23,12 @@ def main(frame_count: int, blend_path: str):
         print(r)
     print("All frames rendered into the Volume.")
 
-    # 3. Zip the frames in the Volume
-    zip_path = zip_frames.remote(session_id)
-    print(f"Frames.zip is located at: {zip_path} in the Volume.")
-
-    # 4. Show how to download it locally via CLI
-    print("\nTo download locally, run:\n"
-          f"  modal volume get distributed-render {volume_zip_local_download_path(session_id)} /tmp/renders/{session_id}/local_frames.zip\n")
+    # # 3. Zip the frames in the Volume
+    # zip_path = zip_frames.remote(session_id)
+    # print(f"Frames.zip is located at: {zip_path} in the Volume.")
+    #
+    # # 4. Show how to download it locally via CLI
+    # print("\nTo download locally, run:\n"
+    #       f"  modal volume get distributed-render {volume_zip_local_download_path(session_id)} /tmp/renders/{session_id}/local_frames.zip\n")
 
     print("Done!")

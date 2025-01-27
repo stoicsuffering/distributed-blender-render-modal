@@ -12,6 +12,12 @@ WITH_GPU = True  # try changing this to "False" to run rendering massively in pa
 # Modal logo made of a transmissive ice-like material, with a generated displacement map. The
 # animation keyframes were defined in Blender.
 
+# os.system("nvidia-smi")
+# os.system("nvcc --version")
+# os.system("cat /proc/cpuinfo")
+# os.system("lscpu")
+
+
 @app.function(
     gpu="L40S" if WITH_GPU else None, # L40S
     cpu=8.0,
@@ -23,16 +29,11 @@ WITH_GPU = True  # try changing this to "False" to run rendering massively in pa
     timeout=600
 )
 def render(session_id: str, frame_number: int) -> str:
+    import sys
+    sys.path.append('/opt/blender')
     import bpy
     import os
     from dependencies import blender_proj_remote_path, remote_job_frames_directory_path
-
-    os.system("nvidia-smi")
-    os.system("nvcc --version")
-    # os.system("cat /proc/cpuinfo")
-    # os.system("lscpu")
-
-    # assert False
 
     input_path = str(blender_proj_remote_path(session_id, validate=True))
     remote_job_frames_directory_path(session_id).mkdir(parents=True, exist_ok=True)
@@ -54,7 +55,6 @@ def render(session_id: str, frame_number: int) -> str:
 # We select the [Cycles rendering engine](https://www.cycles-renderer.org/), which is compatible with CUDA,
 # and then activate the GPU.
 
-
 def configure_rendering(ctx, with_gpu: bool):
     # configure the rendering process
     ctx.scene.render.engine = "CYCLES"
@@ -70,7 +70,7 @@ def configure_rendering(ctx, with_gpu: bool):
 
     # Use GPU acceleration if available.
     if with_gpu:
-        cycles.preferences.compute_device_type = "OPTIX"
+        cycles.preferences.compute_device_type = "CUDA"
         ctx.scene.cycles.device = "GPU"
 
         # reload the devices to update the configuration
