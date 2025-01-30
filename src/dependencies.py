@@ -27,6 +27,9 @@ def remote_job_path(session_id: str) -> Path:
 def remote_job_frames_directory_path(session_id: str) -> Path:
     return VOLUME_MOUNT_PATH / session_id / "frames"
 
+def remote_job_frames_absolute_volume_directory_path(session_id: str) -> Path:
+    return Path("/") / session_id / "frames"
+
 def blender_proj_remote_path(session_id: str, validate: bool) -> Path:
     path = remote_job_path(session_id) / "project.blend"
     if validate:

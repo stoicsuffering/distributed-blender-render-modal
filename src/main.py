@@ -1,7 +1,11 @@
+####
+# Sample command: `modal run src/main.py --frame-count 60 --blend-path my-project.blend`
+####
+
 import modal
 import uuid
 from pathlib import Path
-from dependencies import app, volume, validate_blender_path, blender_proj_remote_volume_upload_path, remote_job_frames_directory_path
+from dependencies import app, volume, validate_blender_path, blender_proj_remote_volume_upload_path, remote_job_frames_absolute_volume_directory_path
 from cloud_render import render_sequence
 from chunking import chunk_frame_range
 import math
@@ -12,6 +16,7 @@ def main(frame_count: int, blend_path: str):
     print(f"Rendering {frame_count} frames from blend='{blend_path}', session='{session_id}'")
 
     # 1. Upload the .blend file into the Volume
+    print(f"Uploading to remove server... {blend_path}")
     with volume.batch_upload() as batch:
         local_blend = Path(blend_path)
         validate_blender_path(local_blend)
@@ -32,7 +37,7 @@ def main(frame_count: int, blend_path: str):
     print("All frames rendered into the Volume.")
 
     # 4. Show how to download it locally via CLI
-    remote_frames_dir_path = remote_job_frames_directory_path(session_id)
+    remote_frames_dir_path = remote_job_frames_absolute_volume_directory_path(session_id)
     local_frames_dir_path = f"/tmp/renders/{session_id}"
     command = f"mkdir -p {local_frames_dir_path} && modal volume get distributed-render {remote_frames_dir_path} {local_frames_dir_path}"
     print(f"\nTo download locally, run:\n    {command}\n")

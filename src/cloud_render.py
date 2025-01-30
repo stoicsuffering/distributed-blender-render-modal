@@ -1,9 +1,13 @@
+from modal import gpu
 from pathlib import Path
 from dependencies import app, rendering_image, volume, VOLUME_MOUNT_PATH
 USE_CAMERA = False
 
+
 @app.function(
-    gpu="L40S",
+    # gpu="L40S",
+    gpu=[gpu.L40S(count=2), gpu.L40S(count=1)],
+    # gpu="H100",
     cpu=8.0,
     memory=10240,
     concurrency_limit=30,
