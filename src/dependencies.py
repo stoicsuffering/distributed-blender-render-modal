@@ -1,5 +1,6 @@
 import modal
 from pathlib import Path
+from enum import Enum
 
 app = modal.App("distributed-render")
 
@@ -8,6 +9,11 @@ rendering_image = (
     .apt_install("xorg", "libxkbcommon0")  # X11 (Unix GUI) dependencies
     .add_local_dir("/Users/johnrivera/workspace/distributed-render-modal/remote_opt", remote_path="/opt", copy=True)
     .run_commands("mkdir /tmp/blender && tar -xvzf /opt/blender.tar.gz -C /tmp/blender && mv /tmp/blender/opt/blender-dst /opt/blender")
+    .run_commands("/opt/EGL-setup.sh")
+    .env({
+        "EGL_DRIVER": "nvidia",
+        "__EGL_VENDOR_LIBRARY_DIRS": "/usr/share/glvnd/egl_vendor.d"
+    })
 )
 
 volume = modal.Volume.from_name("distributed-render", create_if_missing=True)
@@ -35,3 +41,7 @@ def blender_proj_remote_path(session_id: str, validate: bool) -> Path:
     if validate:
         validate_blender_path(path)
     return path
+
+class RenderEngine(Enum):
+    EEVEE = 1
+    CYCLES = 2

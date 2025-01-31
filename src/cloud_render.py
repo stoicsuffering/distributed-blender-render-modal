@@ -1,7 +1,8 @@
 from modal import gpu
 from pathlib import Path
-from dependencies import app, rendering_image, volume, VOLUME_MOUNT_PATH
+from dependencies import app, rendering_image, volume, VOLUME_MOUNT_PATH, RenderEngine
 USE_CAMERA = False
+ENGINE = RenderEngine.EEVEE
 
 
 @app.function(
@@ -43,18 +44,29 @@ def render_sequence(session_id: str, start_frame: int, end_frame: int, camera_na
     bpy.context.scene.render.filepath = output_path  # Blender will auto-append frame numbers
 
     # Configure rendering and execute animation render
-    configure_rendering(bpy.context)
+    match ENGINE:
+        case RenderEngine.EEVEE:
+            configure_rendering_EEVEE(bpy.context)
+        case RenderEngine.CYCLES:
+            configure_rendering_CYCLES(bpy.context)
+
     bpy.ops.render.render(animation=True)  # Render the entire frame range
     # Commit volume changes (if necessary)
     volume.commit()
     return f"Successfully rendered frames {start_frame}-{end_frame} for {camera_name} at {output_path}"
 
-def configure_rendering(ctx):
+def configure_rendering_EEVEE(ctx):
+    print(f"Configure rendering for BLENDER_EEVEE")
+    ctx.scene.render.engine = "BLENDER_EEVEE"
+
+
+def configure_rendering_CYCLES(ctx):
     ctx.scene.render.engine = "CYCLES"
     # ctx.scene.render.resolution_x = 3000
     # ctx.scene.render.resolution_y = 3000
     # ctx.scene.render.resolution_percentage = 100
     # ctx.scene.cycles.samples = 1024
+
     print(f"Cycles samples: {ctx.scene.cycles.samples}")
     print(f"Cycles resolution: {ctx.scene.render.resolution_x} x {ctx.scene.render.resolution_y}")
     print(f"Cycles resolution %: {ctx.scene.render.resolution_percentage}")
