@@ -11,11 +11,18 @@ from chunking import chunk_frame_range
 import math
 
 @app.local_entrypoint()
-def main(frame_count: int, blend_path: str):
+def main(start_frame: int, end_frame: int, blend_path: str):
     session_id = str(uuid.uuid4())
-    print(f"Rendering {frame_count} frames from blend='{blend_path}', session='{session_id}'")
+    frame_count = end_frame - start_frame
+    if start_frame == end_frame:
+        frame_count = 1
 
-    # 1. Upload the .blend file into the Volume
+    print(f"Rendering frames {start_frame}-{end_frame} (total: {frame_count}) from blend='{blend_path}', session='{session_id}'")
+
+    if frame_count < 1 or start_frame < 1:
+        raise Exception("Invalid frame range")
+
+        # 1. Upload the .blend file into the Volume
     print(f"Uploading to remove server... {blend_path}")
     with volume.batch_upload() as batch:
         local_blend = Path(blend_path)
@@ -24,9 +31,9 @@ def main(frame_count: int, blend_path: str):
 
     concurrency_limit = 30
     chunk_size = max(1, math.ceil(frame_count / concurrency_limit))
-    chunk_size = min(100, max(3, chunk_size))
+    chunk_size = min(100, max(1, chunk_size))
     print(f"Splitting {frame_count} frames into chunks of {chunk_size}")
-    animations = chunk_frame_range(1, frame_count, chunk_size=chunk_size)
+    animations = chunk_frame_range(start_frame, end_frame, chunk_size=chunk_size)
 
     # 2. Render frames in the Volume
     args = [(session_id, anim[0], anim[1], "TODO CAMERA NAME") for anim in animations]

@@ -2,8 +2,7 @@ from modal import gpu
 from pathlib import Path
 from dependencies import app, rendering_image, volume, VOLUME_MOUNT_PATH, RenderEngine
 USE_CAMERA = False
-ENGINE = RenderEngine.EEVEE
-
+ENGINE = RenderEngine.CYCLES
 
 @app.function(
     # gpu="L40S",
@@ -23,6 +22,7 @@ def render_sequence(session_id: str, start_frame: int, end_frame: int, camera_na
     from dependencies import blender_proj_remote_path, remote_job_frames_directory_path
 
     input_path = str(blender_proj_remote_path(session_id, validate=True))
+
     if USE_CAMERA:
         base_output_dir = remote_job_frames_directory_path(session_id) / camera_name # Per-camera subdirectory
     else:
@@ -52,13 +52,12 @@ def render_sequence(session_id: str, start_frame: int, end_frame: int, camera_na
 
     bpy.ops.render.render(animation=True)  # Render the entire frame range
     # Commit volume changes (if necessary)
-    volume.commit()
+    # volume.commit()
     return f"Successfully rendered frames {start_frame}-{end_frame} for {camera_name} at {output_path}"
 
 def configure_rendering_EEVEE(ctx):
     print(f"Configure rendering for BLENDER_EEVEE")
-    ctx.scene.render.engine = "BLENDER_EEVEE"
-
+    ctx.scene.render.engine = "BLENDER_EEVEE_NEXT"
 
 def configure_rendering_CYCLES(ctx):
     ctx.scene.render.engine = "CYCLES"
