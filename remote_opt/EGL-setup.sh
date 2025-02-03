@@ -49,3 +49,8 @@ git clone https://github.com/NVIDIA/libglvnd.git /tmp/libglvnd \
     }" > /usr/share/glvnd/egl_vendor.d/10_nvidia.json \
     && cd / \
     && rm -rf /tmp/libglvnd
+
+## Update Blender installation to use both arguments
+#tar -xf /opt/blender-4.2.6-linux-x64.tar.xz -C /opt/ \
+#        && mv /opt/blender-4.2.6-linux-x64 /opt/blender \
+#        && rm /opt/blender-4.2.6-linux-x64.tar.xz

@@ -5,38 +5,43 @@
 import modal
 import uuid
 from pathlib import Path
-from dependencies import app, volume, validate_blender_path, blender_proj_remote_volume_upload_path, remote_job_frames_absolute_volume_directory_path
+from dependencies import app, volume
 from cloud_render import render_sequence
+from paths import validate_blender_path, blender_proj_remote_volume_upload_path, remote_job_frames_absolute_volume_directory_path
 from chunking import chunk_frame_range
 import math
+from job import Job
 
 @app.local_entrypoint()
-def main(start_frame: int, end_frame: int, blend_path: str):
+def main():
+    current_job = Job.current_job()
+    print(f"current job: {current_job}")
+
     session_id = str(uuid.uuid4())
-    frame_count = end_frame - start_frame
-    if start_frame == end_frame:
+    frame_count = current_job.end_frame - current_job.start_frame
+    if current_job.start_frame == current_job.end_frame:
         frame_count = 1
 
-    print(f"Rendering frames {start_frame}-{end_frame} (total: {frame_count}) from blend='{blend_path}', session='{session_id}'")
+    print(f"Rendering frames {current_job.start_frame}-{current_job.end_frame} (total: {frame_count}) from blend='{current_job.blend_file_path}', session='{session_id}'")
 
-    if frame_count < 1 or start_frame < 1:
+    if frame_count < 1 or current_job.start_frame < 1:
         raise Exception("Invalid frame range")
 
         # 1. Upload the .blend file into the Volume
-    print(f"Uploading to remove server... {blend_path}")
+    print(f"Uploading to remove server... {current_job.blend_file_path}")
     with volume.batch_upload() as batch:
-        local_blend = Path(blend_path)
+        local_blend = Path(current_job.blend_file_path)
         validate_blender_path(local_blend)
         batch.put_file(local_blend, blender_proj_remote_volume_upload_path(session_id))
 
-    concurrency_limit = 30
-    chunk_size = max(1, math.ceil(frame_count / concurrency_limit))
+
+    chunk_size = max(1, math.ceil(frame_count / current_job.render_node_concurrency_target))
     chunk_size = min(100, max(1, chunk_size))
     print(f"Splitting {frame_count} frames into chunks of {chunk_size}")
-    animations = chunk_frame_range(start_frame, end_frame, chunk_size=chunk_size)
+    animations = chunk_frame_range(current_job.start_frame, current_job.end_frame, chunk_size=chunk_size)
 
     # 2. Render frames in the Volume
-    args = [(session_id, anim[0], anim[1], "TODO CAMERA NAME") for anim in animations]
+    args = [(session_id, anim[0], anim[1], "TODO CAMERA NAME", current_job) for anim in animations]
     print(args)
     results = list(render_sequence.starmap(args))
     for r in results:
