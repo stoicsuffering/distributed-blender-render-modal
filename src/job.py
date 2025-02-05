@@ -140,18 +140,18 @@ def selected_job(session_id: str) -> Job:
         "render_engine",
         "min_chunk_size",
         "max_chunk_size",
+        "width",
+        "height",
+        "eco_mode_enabled",
+        "render_max_samples",
+        "render_adaptive_threshold"
     ]
     # ...but these keys must be defined explicitly in the job section.
     job_specific_keys = [
         "blend_file_path",
         "camera_name",
         "start_frame",
-        "end_frame",
-        "width",
-        "height",
-        "render_max_samples",
-        "render_adaptive_threshold",
-        "eco_mode_enabled"
+        "end_frame"
     ]
 
     # First, check that job-specific keys are defined in the job section.

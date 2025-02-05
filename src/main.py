@@ -18,7 +18,7 @@ def main():
     print(f"current job: {current_job}")
     current_job.validate()
 
-        # 1. Upload the .blend file into the Volume
+    # 1. Upload the .blend file into the Volume
     print(f"Uploading to remove server... {current_job.blend_file_path}")
     with volume.batch_upload() as batch:
         local_blend = Path(current_job.blend_file_path)
@@ -27,7 +27,8 @@ def main():
 
     job_chunks = job_chunks_from_job(current_job)
     print(job_chunks)
-    results = list(render_sequence.starmap(job_chunks))
+    args = [[job_chunk] for job_chunk in job_chunks]
+    results = list(render_sequence.starmap(args))
     for r in results:
         print(r)
     print("All frames rendered into the Volume.")
