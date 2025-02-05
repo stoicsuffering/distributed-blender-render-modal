@@ -1,6 +1,7 @@
 from dependencies import app, rendering_image, volume
 from paths import VOLUME_MOUNT_PATH
 from job import JobChunk, Job
+from utils import print_general_info
 
 @app.function(
     gpu="L40S",
@@ -15,7 +16,6 @@ def render_sequence(job_chunk: JobChunk) -> str:
     import sys
     sys.path.append('/opt/blender')
     import bpy
-    from utils import print_general_info
 
     print(f"render sequence job chunk: {job_chunk}")
 
