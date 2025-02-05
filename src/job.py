@@ -67,7 +67,7 @@ class Job:
         return min(self.max_chunk_size, max(self.min_chunk_size, chunk_size))
 
     def frame_count(self) -> int:
-        frame_count = self.overall_end_frame - self.overall_start_frame
+        frame_count = (self.overall_end_frame - self.overall_start_frame) + 1
         if self.overall_end_frame == self.overall_start_frame:
             frame_count = 1
         return frame_count
@@ -103,7 +103,8 @@ class JobChunk:
 def job_chunks_from_job(job: Job) -> list[JobChunk]:
     frame_count = job.frame_count()
     chunk_size = math.ceil(frame_count / job.render_node_concurrency_target)
-    chunk_size = min(job.max_chunk_size, max(job.min_chunk_size, chunk_size))
+    max_chunk_size = min(job.max_chunk_size, frame_count)
+    chunk_size = min(max_chunk_size, max(job.min_chunk_size, chunk_size))
     chunks = chunk_frame_range(job.overall_start_frame, job.overall_end_frame, chunk_size=chunk_size)
     print(f"Splitting {frame_count} frames into chunks of {chunk_size}, chunks={chunks}")
     return [JobChunk(job=job, chunk_start_frame=chunk[0], chunk_end_frame=chunk[1]) for chunk in chunks]
