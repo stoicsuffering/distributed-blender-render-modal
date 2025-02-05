@@ -10,48 +10,32 @@ from cloud_render import render_sequence
 from paths import validate_blender_path, blender_proj_remote_volume_upload_path, remote_job_frames_absolute_volume_directory_path
 from chunking import chunk_frame_range
 import math
-from job import Job
+from job import Job, JobChunk, job_chunks_from_job, selected_job
 
 @app.local_entrypoint()
 def main():
-    current_job = Job.current_job()
+    current_job: Job = selected_job(str(uuid.uuid4()))
     print(f"current job: {current_job}")
-
-    session_id = str(uuid.uuid4())
-    frame_count = current_job.end_frame - current_job.start_frame
-    if current_job.start_frame == current_job.end_frame:
-        frame_count = 1
-
-    print(f"Rendering frames {current_job.start_frame}-{current_job.end_frame} (total: {frame_count}) from blend='{current_job.blend_file_path}', session='{session_id}'")
-
-    if frame_count < 1 or current_job.start_frame < 1:
-        raise Exception("Invalid frame range")
+    current_job.validate()
 
         # 1. Upload the .blend file into the Volume
     print(f"Uploading to remove server... {current_job.blend_file_path}")
     with volume.batch_upload() as batch:
         local_blend = Path(current_job.blend_file_path)
         validate_blender_path(local_blend)
-        batch.put_file(local_blend, blender_proj_remote_volume_upload_path(session_id))
+        batch.put_file(local_blend, blender_proj_remote_volume_upload_path(current_job.session_id))
 
-
-    chunk_size = max(1, math.ceil(frame_count / current_job.render_node_concurrency_target))
-    chunk_size = min(100, max(1, chunk_size))
-    print(f"Splitting {frame_count} frames into chunks of {chunk_size}")
-    animations = chunk_frame_range(current_job.start_frame, current_job.end_frame, chunk_size=chunk_size)
-
-    # 2. Render frames in the Volume
-    args = [(session_id, anim[0], anim[1], "TODO CAMERA NAME", current_job) for anim in animations]
-    print(args)
-    results = list(render_sequence.starmap(args))
+    job_chunks = job_chunks_from_job(current_job)
+    print(job_chunks)
+    results = list(render_sequence.starmap(job_chunks))
     for r in results:
         print(r)
     print("All frames rendered into the Volume.")
 
     # 4. Show how to download it locally via CLI
-    remote_frames_dir_path = remote_job_frames_absolute_volume_directory_path(session_id)
-    local_frames_dir_path = f"/tmp/renders/{session_id}"
-    command = f"mkdir -p {local_frames_dir_path} && modal volume get distributed-render {remote_frames_dir_path} {local_frames_dir_path}"
+    remote_frames_dir_path = remote_job_frames_absolute_volume_directory_path(current_job.session_id)
+    local_frames_dir_path = f"/tmp/renders/{current_job.session_id}"
+    command = f"mkdir -p {local_frames_dir_path} && modal volume get distributed-render {remote_frames_dir_path} {local_frames_dir_path} && open {local_frames_dir_path}"
     print(f"\nTo download locally, run:\n    {command}\n")
 
     print("Done!")
