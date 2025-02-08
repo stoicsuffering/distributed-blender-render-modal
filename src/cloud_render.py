@@ -67,7 +67,7 @@ def configure_rendering_cycles(bpy, job: Job):
     bpy.context.scene.cycles.use_auto_tile = False
     bpy.context.scene.render.use_persistent_data = True
 
-    bpy.context.scene.cycles.adaptive_min_samples = 48
+    bpy.context.scene.cycles.adaptive_min_samples = 42
     bpy.context.scene.cycles.samples = job.render_max_samples
     bpy.context.scene.cycles.use_adaptive_sampling = True
 
