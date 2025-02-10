@@ -24,3 +24,12 @@ git clone https://github.com/NVIDIA/libglvnd.git /tmp/libglvnd \
     }" > /usr/share/glvnd/egl_vendor.d/10_nvidia.json \
     && cd / \
     && rm -rf /tmp/libglvnd
+
+df -h /
+
+apt autoremove
+apt clean
+rm -rf /var/lib/apt/lists/*
+
+df -h /
+echo "Completed EGL Setup"
