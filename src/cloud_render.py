@@ -1,10 +1,8 @@
-import uuid
-
-from dependencies import app, rendering_image, volume
+from dependencies import app, rendering_image, volume, addons
 from paths import VOLUME_MOUNT_PATH
 from job import JobChunk, Job
 from utils import print_general_info
-
+from blender_addons import install_and_verify
 
 @app.function(
     gpu="L40S",
@@ -13,48 +11,17 @@ from utils import print_general_info
     concurrency_limit=30,
     image=rendering_image,
     volumes={VOLUME_MOUNT_PATH: volume},
-    timeout=(8*60*60) # 8 hours.
+    timeout=(8*60*60), # 8 hours.
+    retries=0 # No need to burn money if there's an issue...
 )
 def render_sequence(job_chunk: JobChunk) -> str:
-    import subprocess
-    import pickle
-    import os
-
-    job_UUID = str(uuid.uuid4())
-
-    output_file_path = f"/tmp/output-{job_UUID}.txt"
-    pickle_path = f"/tmp/perform_render-result-{job_UUID}.pickle"
-
-    # Write the object to a pickle file.
-    with open(pickle_path, "wb") as f:
-        pickle.dump(job_chunk, f)
-
-    try:
-        output = subprocess.run(
-            ['python3.11', '-u', '/tmp/blender_addons/perform_render.py', pickle_path, output_file_path],
-            check=True
-        )
-        print(f"Finished running install_addons.py, output: {output.stdout}")
-    except subprocess.CalledProcessError as e:
-        print(f"Command failed with error: {e}")
-        print(f"Combined output (stdout and stderr): {e.output}")
-
-    # After the child process exits, check for the output file.
-    if os.path.exists(output_file_path):
-        with open(output_file_path) as f:
-            print("Child process output:")
-            result = f.read()
-            print(result)
-            if result == "success":
-                print("Verified job completed successfully")
-            else:
-                raise ValueError("Output file was not expected value")
-    else:
-        print("No output file found—task may have failed.")
-        raise ValueError("No output file found!")
-
-    return
-
+    import bpy
+    print(f"render sequence job chunk: {job_chunk}")
+    install_and_verify(addons)
+    configure_rendering(bpy, job_chunk)
+    print_general_info(bpy.context)
+    bpy.ops.render.render(animation=True)  # Render the entire frame range
+    return f"Successfully rendered frames {job_chunk.chunk_start_frame}-{job_chunk.chunk_end_frame} for {job_chunk.job.camera_name} at {bpy.context.scene.render.filepath}"
 
 def configure_rendering(bpy, job_chunk: JobChunk):
     bpy.ops.wm.open_mainfile(filepath=job_chunk.remote_blender_proj_path())

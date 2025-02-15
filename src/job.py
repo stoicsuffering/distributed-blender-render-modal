@@ -86,15 +86,17 @@ class JobChunk:
         self.job = job
         self.chunk_start_frame = chunk_start_frame
         self.chunk_end_frame = chunk_end_frame
-        self.remote_blender_proj_path = str(blender_proj_remote_path(self.job.session_id, validate=False)) # TODO
-        self.base_output_dir = remote_job_frames_directory_path(self.job.session_id)
 
     def __repr__(self):
         return f"JobChunk(chunk_start_frame={self.chunk_start_frame}, chunk_end_frame={self.chunk_end_frame}, job={self.job})"
 
+    def remote_blender_proj_path(self) -> str:
+        return str(blender_proj_remote_path(self.job.session_id, validate=True))
+
     def make_remote_frame_path(self) -> str:
-        self.base_output_dir.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
-        return str(self.base_output_dir / f"{self.job.job_name}_")  # Base file path for animation frames
+        base_output_dir = remote_job_frames_directory_path(self.job.session_id)
+        base_output_dir.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
+        return str(base_output_dir / f"{self.job.job_name}_")  # Base file path for animation frames
 
 # Helpers
 
