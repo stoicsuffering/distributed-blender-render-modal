@@ -100,9 +100,9 @@ class JobChunk:
 
 # Helpers
 
-def job_chunks_from_job(job: Job) -> list[JobChunk]:
+def job_chunks_from_job(job: Job, total_chunk_target: int) -> list[JobChunk]:
     frame_count = job.frame_count()
-    chunk_size = math.ceil(frame_count / job.render_node_concurrency_target)
+    chunk_size = math.ceil(frame_count / total_chunk_target)
     max_chunk_size = min(job.max_chunk_size, frame_count)
     chunk_size = min(max_chunk_size, max(job.min_chunk_size, chunk_size))
     chunks = chunk_frame_range(job.overall_start_frame, job.overall_end_frame, chunk_size=chunk_size)

@@ -6,7 +6,7 @@ import modal
 import uuid
 from pathlib import Path
 from dependencies import app, volume
-from cloud_render import render_sequence
+from cloud_render import render_sequence_with_concurrency_limit
 from paths import validate_blender_path, blender_proj_remote_volume_upload_path, remote_job_frames_absolute_volume_directory_path
 from job import Job, job_chunks_from_job, selected_job
 
@@ -23,7 +23,15 @@ def main():
         validate_blender_path(local_blend)
         batch.put_file(local_blend, blender_proj_remote_volume_upload_path(current_job.session_id))
 
-    job_chunks = job_chunks_from_job(current_job)
+    render_sequence = render_sequence_with_concurrency_limit(current_job.render_node_concurrency_target)
+
+    total_chunk_target = current_job.render_node_concurrency_target
+    if current_job.render_node_concurrency_target > 1:
+        # Keep max nodes at original concurrency target, but break down further to better parallelize computationally-intensive localized frame-regions.
+        # There's a tricky tradeoff here between startup latency and long stragglers
+        total_chunk_target = current_job.render_node_concurrency_target * 2
+
+    job_chunks = job_chunks_from_job(current_job, total_chunk_target=total_chunk_target)
     print(job_chunks)
     args = [[job_chunk] for job_chunk in job_chunks]
     results = list(render_sequence.starmap(args))
