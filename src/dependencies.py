@@ -25,6 +25,7 @@ rendering_image = (
     .run_commands(f"python3.11 -m pip install /opt/{bpy_package_name}")
     # Blender Addons
     .add_local_dir("remote_resources/blender_addons", remote_path="/tmp/blender_addons", copy=True)
+    .run_function(install_and_verify, kwargs={'addons': addons})
 )
 
 volume = modal.Volume.from_name("distributed-render", create_if_missing=True)

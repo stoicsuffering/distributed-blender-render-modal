@@ -17,14 +17,16 @@ def verify_addons(addons: list[BlenderAddon]):
 
 def install_and_verify(addons: list[BlenderAddon]):
     import bpy
+    import addon_utils
 
     for addon in addons:
         print(f'Installing addon: {addon.modulename}')
         bpy.ops.preferences.addon_install(filepath=f'/tmp/blender_addons/{addon.filename}')
-        bpy.ops.preferences.addon_enable(module=addon.modulename)
+        addon_utils.enable(addon.modulename, default_set=True, persistent=True)
     #
     bpy.ops.wm.save_userpref()
     print('Successfully installed all addons')
 
+    print('Verifying addons')
     verify_addons(addons)
 

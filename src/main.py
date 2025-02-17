@@ -6,7 +6,7 @@ import modal
 import uuid
 from pathlib import Path
 from dependencies import app, volume
-from cloud_render import render_sequence_with_concurrency_limit
+from cloud_render import render_sequence
 from paths import validate_blender_path, blender_proj_remote_volume_upload_path, remote_job_frames_absolute_volume_directory_path
 from job import Job, job_chunks_from_job, selected_job
 
@@ -22,8 +22,6 @@ def main():
         local_blend = Path(current_job.blend_file_path)
         validate_blender_path(local_blend)
         batch.put_file(local_blend, blender_proj_remote_volume_upload_path(current_job.session_id))
-
-    render_sequence = render_sequence_with_concurrency_limit(current_job.render_node_concurrency_target)
 
     total_chunk_target = current_job.render_node_concurrency_target
     if current_job.render_node_concurrency_target > 1:

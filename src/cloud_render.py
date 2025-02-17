@@ -2,29 +2,27 @@ from dependencies import app, rendering_image, volume, addons
 from paths import VOLUME_MOUNT_PATH
 from job import JobChunk, Job
 from utils import print_general_info
-from blender_addons import install_and_verify
+from blender_addons import verify_addons
 
-def render_sequence_with_concurrency_limit(concurrency_limit: int):
-    @app.function(
-        gpu="L40S",
-        cpu=4,
-        memory=(8 * 1024),
-        concurrency_limit=concurrency_limit,
-        image=rendering_image,
-        volumes={VOLUME_MOUNT_PATH: volume},
-        timeout=(8 * 60 * 60),  # 8 hours.
-        retries=0  # No need to burn money if there's an issue...
-    )
-    def render_sequence(job_chunk: JobChunk) -> str:
-        import bpy
-        print(f"render sequence job chunk: {job_chunk}")
-        install_and_verify(addons)
-        configure_rendering(bpy, job_chunk)
-        print_general_info(bpy.context)
-        bpy.ops.render.render(animation=True)  # Render the entire frame range
-        return f"Successfully rendered frames {job_chunk.chunk_start_frame}-{job_chunk.chunk_end_frame} for {job_chunk.job.camera_name} at {bpy.context.scene.render.filepath}"
+@app.function(
+     gpu="L40S",
+     cpu=4,
+     memory=(8 * 1024),
+    concurrency_limit=20,
+    image=rendering_image,
+    volumes={VOLUME_MOUNT_PATH: volume},
+    timeout=(8 * 60 * 60),  # 8 hours.
+    retries=0  # No need to burn money if there's an issue...
+)
+def render_sequence(job_chunk: JobChunk) -> str:
+    import bpy
+    print(f"render sequence job chunk: {job_chunk}")
+    verify_addons(addons)
+    configure_rendering(bpy, job_chunk)
+    print_general_info(bpy.context)
+    bpy.ops.render.render(animation=True)  # Render the entire frame range
+    return f"Successfully rendered frames {job_chunk.chunk_start_frame}-{job_chunk.chunk_end_frame} for {job_chunk.job.camera_name} at {bpy.context.scene.render.filepath}"
 
-    return render_sequence
 
 def configure_rendering(bpy, job_chunk: JobChunk):
     bpy.ops.wm.open_mainfile(filepath=job_chunk.remote_blender_proj_path())
