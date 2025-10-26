@@ -5,10 +5,10 @@ from utils import print_general_info
 from blender_addons import verify_addons
 
 @app.function(
-     gpu="L40S",
-     cpu=4,
-     memory=(8 * 1024),
-    concurrency_limit=20,
+    gpu="L40S",
+    cpu=4,
+    memory=(8 * 1024),
+    max_containers=20,
     image=rendering_image,
     volumes={VOLUME_MOUNT_PATH: volume},
     timeout=(8 * 60 * 60),  # 8 hours.

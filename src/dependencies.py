@@ -26,6 +26,12 @@ rendering_image = (
     # Blender Addons
     .add_local_dir("remote_resources/blender_addons", remote_path="/tmp/blender_addons", copy=True)
     .run_function(install_and_verify, kwargs={'addons': addons})
+    .add_local_python_source("dependencies") 
+    .add_local_python_source("paths") 
+    .add_local_python_source("job")
+    .add_local_python_source("utils")
+    .add_local_python_source("blender_addons")
+    .add_local_python_source("chunking")
 )
 
 volume = modal.Volume.from_name("distributed-render", create_if_missing=True)
