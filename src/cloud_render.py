@@ -8,7 +8,7 @@ from blender_addons import verify_addons
     gpu="L40S",
     cpu=4,
     memory=(8 * 1024),
-    max_containers=20,
+    max_containers=40,
     image=rendering_image,
     volumes={VOLUME_MOUNT_PATH: volume},
     timeout=(8 * 60 * 60),  # 8 hours.
@@ -71,7 +71,6 @@ def configure_rendering_cycles(bpy, job: Job):
     bpy.context.scene.cycles.use_adaptive_sampling = True
 
     if job.eco_mode_enabled:
-        bpy.context.scene.render.resolution_percentage = 25
         bpy.context.scene.cycles.adaptive_threshold = 0.2
 
         if job.height > 1500:
