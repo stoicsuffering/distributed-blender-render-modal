@@ -73,6 +73,11 @@ def configure_rendering_cycles(bpy, job: Job):
     if job.eco_mode_enabled:
         bpy.context.scene.render.resolution_percentage = 25
         bpy.context.scene.cycles.adaptive_threshold = 0.2
+
+        if job.height > 1500:
+            bpy.context.scene.render.resolution_percentage = 25
+        else:
+            bpy.context.scene.render.resolution_percentage = 66 # Eg. 720p if 1080p
     else:
         bpy.context.scene.render.resolution_percentage = 100
         bpy.context.scene.cycles.adaptive_threshold = job.render_adaptive_threshold

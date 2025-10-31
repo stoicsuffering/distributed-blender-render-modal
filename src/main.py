@@ -39,8 +39,8 @@ def main():
 
     # 4. Show how to download it locally via CLI
     remote_frames_dir_path = remote_job_frames_absolute_volume_directory_path(current_job.session_id)
-    local_frames_dir_path = f"/tmp/renders/{current_job.session_id}"
-    command = f"mkdir -p {local_frames_dir_path} && modal volume get distributed-render {remote_frames_dir_path} {local_frames_dir_path} && open {local_frames_dir_path}"
-    print(f"\nTo download locally, run:\n    {command}\n")
+    local_frames_dir_path = f"~/frames/{current_job.job_name}_{current_job.session_id}"
+    command = f"mkdir -p {local_frames_dir_path} && modal volume get distributed-render {remote_frames_dir_path} {local_frames_dir_path}"
+    print(f"\nTo download locally, run:\n{command}\n")
 
     print("Done!")
